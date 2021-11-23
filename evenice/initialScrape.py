@@ -1,37 +1,38 @@
 import requests
 import xml.etree.ElementTree as ET
-import pandas as pd  
+import pandas as pd
 
 # Constant variable functions
 url = 'https://evenice.it/exports/views/contents.xml'
 params = dict()
 rows = []
 
-def scrapeCurrentData(display_id, page = 0, end = 0):
-    
-    # Define the parameters 
+
+def scrapeCurrentData(display_id, page=0, end=0):
+
+    # Define the parameters
     params['display_id'] = display_id
     params['page'] = page
-    
+
     r = requests.get(url, params=params)
     r.encoding = 'utf-8'
 
     # Parse XML file
     parser = ET.XMLParser(encoding='UTF-8')
     root = ET.fromstring(r.text, parser=parser)
-    
+
     for item in root.find('items'):
         if display_id == 'locations':
             id = item.find('id').text
             title = item.find('title').text
             lat = item.find('lat').text
             lon = item.find('lon').text
-            
+
             rows.append({'id': id,
                          'title': title,
                          'lat': lat,
                          'lon': lon})
-            
+
         elif display_id == 'events':
             id = item.find('id').text
             title = item.find('title').text
@@ -52,12 +53,12 @@ def scrapeCurrentData(display_id, page = 0, end = 0):
                          'start_time': start_time,
                          'end_date': end_date,
                          'end_time': end_time})
-    
+
     # Get the amount of results if the first time
     if end == 0:
         totalCount = root.find('totalCount')
         end = int(int(totalCount.text) / 50)
-            
+
     if page == end:
         # create column headers
         if display_id == 'locations':
@@ -68,7 +69,7 @@ def scrapeCurrentData(display_id, page = 0, end = 0):
                     'end_date', 'end_time']
 
         # Make dataframe
-        df = pd.DataFrame(rows, columns = cols) 
+        df = pd.DataFrame(rows, columns=cols)
         # write dataframe to csv
         df.to_csv(display_id + '_utf-8.csv', encoding='utf-8-sig')
         print(display_id + '_utf-8.csv has been made in the folder and can now be accessed.')
@@ -77,9 +78,8 @@ def scrapeCurrentData(display_id, page = 0, end = 0):
         print(str(50*page) + " points logged")
         scrapeCurrentData(display_id, page, end)
 
- 
+
 scrapeCurrentData('locations')
 # reset rows
 rows = []
 scrapeCurrentData('events')
-
